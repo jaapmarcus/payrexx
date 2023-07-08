@@ -1,0 +1,19 @@
+{
+    "name": "jaapmarcus/payrexx",
+    "description": "Payrexx implementation for FOSSBilling",
+    "homepage": "https://eris.nu",
+    "license": "GPL3",
+    "support": {
+        "issues": "https://github.com/jaapmarcus/payrexx/issues"
+    },
+    "require": {
+        "php": ">=8.0",
+        "payrexx/payrexx": "^1.8"
+    },
+    "config": {
+        "vendor-dir": "./src/vendor",
+        "allow-plugins": {
+            "phpstan/extension-installer": true
+        }
+    }
+}
