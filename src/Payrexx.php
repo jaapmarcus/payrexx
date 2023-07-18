@@ -119,29 +119,30 @@ class Payment_Adapter_Payrexx extends Payment_AdapterAbstract implements \FOSSBi
     {
         //10544027
         $trans_txn_id = $data['post']['transaction']['invoice']['paymentRequestId'];
-        error_log($trans_txn_id);
-        $transid = $this->di['db']->getCell('SELECT id from transaction WHERE txn_id = :txn_id', array(':txn_id' => $trans_txn_id));
-        $tx = $this->di['db']->getExistingModelById('Transaction', $transid);
-        $invoice = $this->di['db']->getExistingModelById('Invoice', $tx->invoice_id);
-        $invoiceService = $this->di['mod_service']('Invoice');
-        
-        
-        $client = $this->di['db']->getExistingModelById('Client', $invoice->client_id);
-        $clientService = $this->di['mod_service']('client');
-        
-        $tx->txn_status = 'approved';
-        $tx->status = 'processed';
-        $tx->updated_at = date('Y-m-d H:i:s');
-        $this->di['db']->store($tx);
-        
-        $clientService->addFunds($client, $tx->amount, 'Payment with Mollie', array('status' => 'approved', 'invoice' => $tx->invoice_id));
-        
-        if ($tx->invoice_id) {
-            $invoiceService->payInvoiceWithCredits($invoice);
+        $trans_txn_status = $data['post']['transaction']['status'];
+        if ( $trans_txn_status == 'confirmed' ){
+            $transid = $this->di['db']->getCell('SELECT id from transaction WHERE txn_id = :txn_id AND txn_status = :txn_status', array(':txn_id' => $trans_txn_id, ':txn_status' => 'pending'));
+            $tx = $this->di['db']->getExistingModelById('Transaction', $transid);
+            $invoice = $this->di['db']->getExistingModelById('Invoice', $tx->invoice_id);
+            $invoiceService = $this->di['mod_service']('Invoice');
+            
+            
+            $client = $this->di['db']->getExistingModelById('Client', $invoice->client_id);
+            $clientService = $this->di['mod_service']('client');
+            
+            $tx->txn_status = 'approved';
+            $tx->status = 'processed';
+            $tx->updated_at = date('Y-m-d H:i:s');
+            $this->di['db']->store($tx);
+            
+            $clientService->addFunds($client, $tx->amount, 'Payment via Payrexx', array('status' => 'approved', 'invoice' => $tx->invoice_id));
+            
+            if ($tx->invoice_id) {
+                $invoiceService->payInvoiceWithCredits($invoice);
+            }
+            
+            $invoiceService->doBatchPayWithCredits(array('client_id' => $client->id));
         }
-        
-        $invoiceService->doBatchPayWithCredits(array('client_id' => $client->id));
-        
     }
     
     public function getAmountInCents(\Model_Invoice $invoice)
